@@ -55,23 +55,24 @@ def run_ingestion_job() -> None:
     """Full pipeline: fetch → filter → deduplicate → score → save."""
     logger.info("--- Ingestion job started ---")
 
-    # 1. Resolve active source URLs from DB
+    # 1. Resolve active sources (name + url) from DB
     db = SessionLocal()
     try:
-        active_urls = [
-            s.url for s in db.query(RSSSource).filter(RSSSource.active.is_(True)).all()
+        active_sources = [
+            (s.name, s.url)
+            for s in db.query(RSSSource).filter(RSSSource.active.is_(True)).all()
         ]
     finally:
         db.close()
 
-    if not active_urls:
+    if not active_sources:
         logger.info("No active RSS sources configured. Job done.")
         return
 
-    logger.info("Fetching from %d active sources.", len(active_urls))
+    logger.info("Fetching from %d active sources.", len(active_sources))
 
-    # 2. Fetch from RSS feeds
-    all_articles = fetch_all_feeds(active_urls)
+    # 2. Fetch from RSS feeds (passes clean name so articles are labelled correctly)
+    all_articles = fetch_all_feeds(active_sources)
     logger.info("RSS: %d raw articles", len(all_articles))
 
     # 2. Filter by keywords

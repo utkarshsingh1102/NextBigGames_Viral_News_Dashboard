@@ -51,13 +51,19 @@ def _extract_summary(entry) -> Optional[str]:
     return None
 
 
-def fetch_feed(url: str) -> list[dict]:
-    """Fetch a single RSS feed and return a list of article dicts."""
+def fetch_feed(url: str, source_name: Optional[str] = None) -> list[dict]:
+    """Fetch a single RSS feed and return a list of article dicts.
+
+    If *source_name* is provided it is used as the article source label;
+    otherwise the feed's own title is used.
+    """
     try:
         parsed = feedparser.parse(url)
         if parsed.bozo and not parsed.entries:
             logger.warning("Feed parse error for %s: %s", url, parsed.bozo_exception)
             return []
+
+        name = source_name or parsed.feed.get("title", url)
 
         articles = []
         for entry in parsed.entries:
@@ -71,7 +77,7 @@ def fetch_feed(url: str) -> list[dict]:
                 {
                     "title": title,
                     "url": resolved_url,
-                    "source": parsed.feed.get("title", url),
+                    "source": name,
                     "summary": _extract_summary(entry),
                     "published_at": _parse_published(entry),
                     "reddit_upvotes": 0,
@@ -86,14 +92,21 @@ def fetch_feed(url: str) -> list[dict]:
         return []
 
 
-def fetch_all_feeds(urls: list[str] | None = None) -> list[dict]:
+def fetch_all_feeds(sources: list[tuple[str, str]] | list[str] | None = None) -> list[dict]:
     """Fetch RSS feeds and return merged article list.
 
-    If *urls* is provided, fetch those; otherwise fall back to settings.RSS_FEEDS.
+    *sources* can be:
+    - list of (name, url) tuples  — uses the provided name as the source label
+    - list of URL strings         — falls back to the feed's own title
+    - None                        — falls back to settings.RSS_FEEDS (URL strings)
     """
-    if urls is None:
-        urls = settings.RSS_FEEDS
+    if sources is None:
+        sources = settings.RSS_FEEDS
     all_articles: list[dict] = []
-    for url in urls:
-        all_articles.extend(fetch_feed(url))
+    for item in sources:
+        if isinstance(item, tuple):
+            name, url = item
+            all_articles.extend(fetch_feed(url, source_name=name))
+        else:
+            all_articles.extend(fetch_feed(item))
     return all_articles
