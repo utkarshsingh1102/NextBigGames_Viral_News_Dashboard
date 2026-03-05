@@ -46,11 +46,19 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up Viral Gaming News service...")
-    init_db()
-    # Fire the first ingestion in the background so the server passes
-    # the healthcheck immediately instead of blocking for 30–60 seconds.
-    threading.Thread(target=run_ingestion_job, daemon=True).start()
-    start_scheduler()
+    try:
+        init_db()
+        logger.info("Database initialised successfully.")
+    except Exception as exc:
+        logger.critical(
+            "DATABASE INIT FAILED – check DATABASE_URL is set: %s", exc, exc_info=True
+        )
+        # Don't raise – let the server start so /health returns a degraded status
+        # and Railway logs show the real error instead of a silent crash.
+    else:
+        # Only start ingestion if DB is available
+        threading.Thread(target=run_ingestion_job, daemon=True).start()
+        start_scheduler()
     yield
     stop_scheduler()
     logger.info("Shutdown complete.")
