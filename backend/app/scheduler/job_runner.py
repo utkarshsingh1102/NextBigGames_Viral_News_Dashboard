@@ -31,6 +31,7 @@ def _save_articles(articles: list[dict]) -> int:
                 url=article["url"],
                 summary=article.get("summary"),
                 virality_score=article["virality_score"],
+                tags=article.get("tags", []),
                 created_at=article.get("published_at", datetime.now(timezone.utc)),
             )
             db.add(record)

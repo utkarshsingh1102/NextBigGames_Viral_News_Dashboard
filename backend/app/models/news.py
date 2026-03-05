@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, Text, Float, DateTime
+from sqlalchemy import Column, Text, Float, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
 
@@ -14,6 +14,7 @@ class ViralGamingNews(Base):
     url = Column(Text, nullable=False, unique=True)
     summary = Column(Text, nullable=True)
     virality_score = Column(Float, nullable=False, default=0.0)
+    tags = Column(JSON, nullable=True, default=list)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
