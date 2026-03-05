@@ -1,5 +1,6 @@
 """FastAPI routes for viral gaming news."""
 
+import logging
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -9,7 +10,9 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.news import ViralGamingNews
+from app.models.news import ArticleStatus, ViralGamingNews
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/news", tags=["news"])
 
@@ -28,6 +31,7 @@ class NewsItem(BaseModel):
     summary: Optional[str]
     virality_score: float
     tags: Optional[list[str]] = []
+    status: str = ArticleStatus.NOT_POSTED
     created_at: datetime
 
 
@@ -36,6 +40,10 @@ class NewsList(BaseModel):
     page: int
     page_size: int
     items: list[NewsItem]
+
+
+class StatusUpdate(BaseModel):
+    status: ArticleStatus
 
 
 # ---------------------------------------------------------------------------
@@ -49,9 +57,10 @@ def list_news(
     min_score: float = Query(0.0, ge=0.0, description="Minimum virality score filter"),
     tag: Optional[str] = Query(None, description="Filter by tag (e.g. Funding, Launch, Trending)"),
     source: Optional[str] = Query(None, description="Filter by source name"),
+    status: Optional[str] = Query(None, description="Filter by status (NOT_POSTED, PUBLISHED, DISCARDED)"),
     db: Session = Depends(get_db),
 ):
-    """Return paginated viral gaming news, newest first. Optionally filter by tag or source."""
+    """Return paginated viral gaming news, newest first. Optionally filter by tag, source, or status."""
     offset = (page - 1) * page_size
     query = (
         db.query(ViralGamingNews)
@@ -62,6 +71,8 @@ def list_news(
         query = query.filter(ViralGamingNews.tags.contains([tag]))
     if source:
         query = query.filter(ViralGamingNews.source.ilike(f"%{source}%"))
+    if status:
+        query = query.filter(ViralGamingNews.status == status)
     total = query.count()
     items = query.offset(offset).limit(page_size).all()
     return NewsList(total=total, page=page, page_size=page_size, items=items)
@@ -88,4 +99,17 @@ def get_news_item(item_id: uuid.UUID, db: Session = Depends(get_db)):
     record = db.query(ViralGamingNews).filter(ViralGamingNews.id == item_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Article not found.")
+    return record
+
+
+@router.patch("/{item_id}/status", response_model=NewsItem)
+def update_status(item_id: uuid.UUID, body: StatusUpdate, db: Session = Depends(get_db)):
+    """Update the publishing status of an article (NOT_POSTED / PUBLISHED / DISCARDED)."""
+    record = db.query(ViralGamingNews).filter(ViralGamingNews.id == item_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Article not found.")
+    record.status = body.status
+    db.commit()
+    db.refresh(record)
+    logger.info("Article %s status updated to %s", item_id, body.status)
     return record

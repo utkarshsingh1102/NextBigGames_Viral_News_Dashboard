@@ -45,6 +45,10 @@ def init_db():
         conn.execute(text(
             "ALTER TABLE viral_gaming_news ALTER COLUMN tags TYPE JSONB USING tags::JSONB"
         ))
+        # Add status column for article publishing workflow
+        conn.execute(text(
+            "ALTER TABLE viral_gaming_news ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'NOT_POSTED'"
+        ))
         conn.commit()
 
     # Seed default RSS sources if the table is empty

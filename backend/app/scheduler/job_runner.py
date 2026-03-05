@@ -14,15 +14,20 @@ from app.models.source import RSSSource
 from app.services.rss_fetcher import fetch_all_feeds
 from app.services.keyword_filter import filter_articles
 from app.services.virality_engine import deduplicate, score_and_filter
+from app.services.whatsapp_notifier import send_articles
 
 logger = logging.getLogger(__name__)
 
 _scheduler: BackgroundScheduler | None = None
 
 
-def _save_articles(articles: list[dict]) -> int:
-    """Persist articles to the database, skipping duplicates. Returns saved count."""
+def _save_articles(articles: list[dict]) -> tuple[int, list[dict]]:
+    """Persist articles to the database, skipping duplicates.
+
+    Returns (saved_count, list_of_newly_saved_articles).
+    """
     saved = 0
+    newly_saved: list[dict] = []
     db = SessionLocal()
     try:
         for article in articles:
@@ -39,6 +44,7 @@ def _save_articles(articles: list[dict]) -> int:
             try:
                 db.flush()  # flush individually to catch per-row IntegrityError
                 saved += 1
+                newly_saved.append(article)
             except IntegrityError:
                 db.rollback()
                 logger.debug("Skipped duplicate URL: %s", article["url"])
@@ -48,7 +54,7 @@ def _save_articles(articles: list[dict]) -> int:
         logger.error("DB save error: %s", exc, exc_info=True)
     finally:
         db.close()
-    return saved
+    return saved, newly_saved
 
 
 def run_ingestion_job() -> None:
@@ -92,8 +98,14 @@ def run_ingestion_job() -> None:
     logger.info("Viral articles (score >= %.1f): %d", settings.VIRALITY_THRESHOLD, len(viral))
 
     # 5. Persist
-    saved = _save_articles(viral)
+    saved, newly_saved = _save_articles(viral)
     logger.info("Saved %d new articles to database.", saved)
+
+    # 6. Send WhatsApp notifications for genuinely new articles
+    if newly_saved:
+        logger.info("Sending WhatsApp notifications for %d new articles.", len(newly_saved))
+        send_articles(newly_saved)
+
     logger.info("--- Ingestion job complete ---")
 
 

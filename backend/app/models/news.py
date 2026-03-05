@@ -1,8 +1,15 @@
+import enum
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, Text, Float, DateTime
+from sqlalchemy import Column, Text, Float, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.database import Base
+
+
+class ArticleStatus(str, enum.Enum):
+    NOT_POSTED = "NOT_POSTED"
+    PUBLISHED = "PUBLISHED"
+    DISCARDED = "DISCARDED"
 
 
 class ViralGamingNews(Base):
@@ -15,6 +22,7 @@ class ViralGamingNews(Base):
     summary = Column(Text, nullable=True)
     virality_score = Column(Float, nullable=False, default=0.0)
     tags = Column(JSONB, nullable=True, default=list)
+    status = Column(String, nullable=False, default=ArticleStatus.NOT_POSTED)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,

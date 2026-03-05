@@ -176,3 +176,79 @@ Articles with `score >= 7.0` (configurable) are stored as viral.
 2. Click **create another app**
 3. Choose **script**
 4. Copy the client ID (under the app name) and secret into `.env`
+
+---
+
+## WhatsApp Integration (Twilio)
+
+### Environment Variables
+
+| Variable | Description |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID (from Twilio Console) |
+| `TWILIO_AUTH_TOKEN` | Twilio Auth Token (from Twilio Console) |
+| `TWILIO_WHATSAPP_NUMBER` | Your Twilio WhatsApp sender number, e.g. `+14155238886` |
+| `USER_WHATSAPP_NUMBERS` | Comma-separated recipient numbers, e.g. `+919876543210,+14155551234` |
+
+### Automatic Notifications
+
+When new articles pass the virality threshold and are saved to the database, a WhatsApp message is automatically sent to all numbers in `USER_WHATSAPP_NUMBERS`.
+
+Message format:
+```
+🚨 Viral Gaming News
+
+Title: <title>
+Source: <source>
+Tags: <tags>
+Score: <score>
+Read: <url>
+```
+
+### WhatsApp Command Bot
+
+Point your Twilio WhatsApp webhook to:
+
+```
+POST https://<your-railway-domain>/api/v1/whatsapp/webhook
+```
+
+Twilio setup:
+1. Open the Twilio Console → Messaging → Senders → WhatsApp Senders
+2. Select your sandbox or approved number
+3. Set the **"A Message Comes In"** webhook to the URL above (HTTP POST)
+
+Supported commands (send via WhatsApp):
+
+| Command | Response |
+|---|---|
+| `articles` | Latest 5 viral articles |
+| `tags` | List of all available tag names |
+| `articles <tag>` | Latest 5 articles filtered by tag (e.g. `articles Funding`) |
+
+### Article Status System
+
+Each article has a `status` field with one of three values:
+
+| Status | Meaning |
+|---|---|
+| `NOT_POSTED` | Default — newly ingested, not yet actioned |
+| `PUBLISHED` | Marked as published/shared |
+| `DISCARDED` | Dismissed, won't be posted |
+
+Update status via API:
+
+```
+PATCH /api/v1/news/{id}/status
+Content-Type: application/json
+
+{"status": "PUBLISHED"}
+```
+
+Filter news by status:
+
+```
+GET /api/v1/news?status=NOT_POSTED
+GET /api/v1/news?status=PUBLISHED
+GET /api/v1/news?status=DISCARDED
+```
