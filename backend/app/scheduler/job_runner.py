@@ -11,7 +11,6 @@ from app.config import settings
 from app.database import SessionLocal
 from app.models.news import ViralGamingNews
 from app.services.rss_fetcher import fetch_all_feeds
-from app.services.reddit_fetcher import fetch_all_subreddits
 from app.services.keyword_filter import filter_articles
 from app.services.virality_engine import deduplicate, score_and_filter
 
@@ -54,15 +53,9 @@ def run_ingestion_job() -> None:
     """Full pipeline: fetch → filter → deduplicate → score → save."""
     logger.info("--- Ingestion job started ---")
 
-    # 1. Fetch from all sources
-    rss_articles = fetch_all_feeds()
-    logger.info("RSS: %d raw articles", len(rss_articles))
-
-    reddit_articles = fetch_all_subreddits()
-    logger.info("Reddit: %d raw articles", len(reddit_articles))
-
-    all_articles = rss_articles + reddit_articles
-    logger.info("Total raw: %d articles", len(all_articles))
+    # 1. Fetch from RSS feeds
+    all_articles = fetch_all_feeds()
+    logger.info("RSS: %d raw articles", len(all_articles))
 
     # 2. Filter by keywords
     filtered = filter_articles(all_articles)
