@@ -108,6 +108,41 @@ def run_ingestion_job() -> None:
 
     logger.info("--- Ingestion job complete ---")
 
+    # 7. LinkedIn scraping (isolated — failures don't affect RSS pipeline)
+    _run_linkedin_scraping()
+
+
+def _run_linkedin_scraping() -> None:
+    """Scrape all active LinkedIn accounts and persist new posts."""
+    logger.info("--- LinkedIn scrape started ---")
+    try:
+        from app.models.linkedin import LinkedInAccount
+        from app.routes.linkedin import _scrape_account
+
+        db = SessionLocal()
+        try:
+            accounts = (
+                db.query(LinkedInAccount)
+                .filter(LinkedInAccount.active.is_(True))
+                .all()
+            )
+        finally:
+            db.close()
+
+        if not accounts:
+            logger.info("No active LinkedIn accounts configured.")
+            logger.info("--- LinkedIn scrape complete ---")
+            return
+
+        total_saved = 0
+        for account in accounts:
+            total_saved += _scrape_account(account.id, account.profile_id)
+
+        logger.info("LinkedIn scrape complete — %d new posts saved.", total_saved)
+    except Exception as exc:
+        logger.error("LinkedIn scrape error: %s", exc, exc_info=True)
+    logger.info("--- LinkedIn scrape complete ---")
+
 
 def start_scheduler() -> BackgroundScheduler:
     """Initialise and start the APScheduler background scheduler."""

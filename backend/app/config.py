@@ -44,6 +44,10 @@ class Settings:
         if o.strip()
     ]
 
+    # LinkedIn scraper credentials (unofficial API — use a secondary account)
+    LINKEDIN_EMAIL: str = os.getenv("LINKEDIN_EMAIL", "")
+    LINKEDIN_PASSWORD: str = os.getenv("LINKEDIN_PASSWORD", "")
+
     # Public base URL of this API (used in OpenAPI docs / Lovable env var)
     API_BASE_URL: str = os.getenv("API_BASE_URL", "http://localhost:8000")
 

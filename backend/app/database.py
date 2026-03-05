@@ -32,6 +32,7 @@ def init_db():
     """Create all tables, run safe migrations, and seed default sources."""
     from app.models import news  # noqa: F401
     from app.models import source  # noqa: F401
+    from app.models import linkedin  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 

@@ -25,7 +25,7 @@ def whatsapp_webhook(
     Responds with TwiML so Twilio can deliver the reply back to the sender.
     """
     logger.info("WhatsApp message from %s: %r", From, Body)
-    reply = handle_command(Body, db)
+    reply = handle_command(Body, From, db)
 
     # Escape XML special characters in the reply
     safe_reply = (

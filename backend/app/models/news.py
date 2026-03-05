@@ -8,6 +8,7 @@ from app.database import Base
 
 class ArticleStatus(str, enum.Enum):
     NOT_POSTED = "NOT_POSTED"
+    IN_QUEUE = "IN_QUEUE"
     PUBLISHED = "PUBLISHED"
     DISCARDED = "DISCARDED"
 

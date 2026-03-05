@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import init_db
+from app.routes.linkedin import router as linkedin_router
 from app.routes.news import router as news_router
 from app.routes.sources import router as sources_router
 from app.routes.whatsapp import router as whatsapp_router
@@ -93,6 +94,7 @@ app.add_middleware(
 app.include_router(news_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
 app.include_router(whatsapp_router, prefix="/api/v1")
+app.include_router(linkedin_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
