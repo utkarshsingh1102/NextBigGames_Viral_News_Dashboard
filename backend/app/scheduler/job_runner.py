@@ -31,22 +31,24 @@ def _save_articles(articles: list[dict]) -> tuple[int, list[dict]]:
     db = SessionLocal()
     try:
         for article in articles:
-            record = ViralGamingNews(
-                title=article["title"],
-                source=article["source"],
-                url=article["url"],
-                summary=article.get("summary"),
-                virality_score=article["virality_score"],
-                tags=article.get("tags", []),
-                created_at=article.get("published_at", datetime.now(timezone.utc)),
-            )
-            db.add(record)
             try:
-                db.flush()  # flush individually to catch per-row IntegrityError
+                # begin_nested() creates a SAVEPOINT so a per-row IntegrityError
+                # only rolls back that single row, not the whole transaction.
+                with db.begin_nested():
+                    record = ViralGamingNews(
+                        title=article["title"],
+                        source=article["source"],
+                        url=article["url"],
+                        summary=article.get("summary"),
+                        virality_score=article["virality_score"],
+                        tags=article.get("tags", []),
+                        created_at=article.get("published_at", datetime.now(timezone.utc)),
+                    )
+                    db.add(record)
+                    db.flush()
                 saved += 1
                 newly_saved.append(article)
             except IntegrityError:
-                db.rollback()
                 logger.debug("Skipped duplicate URL: %s", article["url"])
         db.commit()
     except Exception as exc:
