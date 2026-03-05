@@ -35,10 +35,15 @@ def init_db():
 
     Base.metadata.create_all(bind=engine)
 
-    # Safe migration: add tags column to existing tables that predate this column
+    # Safe migrations for the viral_gaming_news table
     with engine.connect() as conn:
+        # Add tags column if it doesn't exist yet (first-time deploys)
         conn.execute(text(
-            "ALTER TABLE viral_gaming_news ADD COLUMN IF NOT EXISTS tags JSON DEFAULT '[]'"
+            "ALTER TABLE viral_gaming_news ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'"
+        ))
+        # Convert existing JSON column to JSONB so @> (contains) queries work
+        conn.execute(text(
+            "ALTER TABLE viral_gaming_news ALTER COLUMN tags TYPE JSONB USING tags::JSONB"
         ))
         conn.commit()
 
