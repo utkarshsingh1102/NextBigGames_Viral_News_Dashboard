@@ -64,4 +64,35 @@ def init_db():
     finally:
         db.close()
 
+    # Re-tag any articles saved before auto-tagging was introduced (tags = [] or null)
+    _retag_untagged_articles()
+
     logger.info("Database tables initialised.")
+
+
+def _retag_untagged_articles() -> None:
+    """Back-fill tags on articles that were ingested before auto-tagging existed."""
+    from app.models.news import ViralGamingNews
+    from app.services.keyword_filter import tag_article
+
+    db = SessionLocal()
+    try:
+        # Select articles whose tags array is empty or null
+        articles = db.query(ViralGamingNews).filter(
+            (ViralGamingNews.tags == None) | (ViralGamingNews.tags == [])  # noqa: E711
+        ).all()
+
+        if not articles:
+            return
+
+        for article in articles:
+            combined = " ".join(filter(None, [article.title, article.summary or ""]))
+            article.tags = tag_article(combined)
+
+        db.commit()
+        logger.info("Back-filled tags on %d existing articles.", len(articles))
+    except Exception as exc:
+        db.rollback()
+        logger.error("Re-tagging migration failed: %s", exc, exc_info=True)
+    finally:
+        db.close()
