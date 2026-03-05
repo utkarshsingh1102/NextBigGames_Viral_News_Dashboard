@@ -1,6 +1,7 @@
 """RSS feed fetcher – returns normalised article dicts."""
 
 import logging
+import urllib.request
 from datetime import datetime, timezone
 from typing import Optional
 import feedparser
@@ -8,6 +9,28 @@ import feedparser
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_url(url: str) -> str:
+    """Follow redirects to get the real article URL.
+
+    Google News RSS wraps every link in a news.google.com redirect that
+    browsers block with ERR_BLOCKED_BY_RESPONSE. We follow the redirect
+    at ingest time so the stored URL is always the real article page.
+    Only applied to news.google.com URLs to avoid slowing other feeds.
+    """
+    if "news.google.com" not in url:
+        return url
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; viral-news-bot/1.0)"},
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return resp.url
+    except Exception as exc:
+        logger.debug("Could not resolve redirect for %s: %s", url, exc)
+        return url
 
 
 def _parse_published(entry) -> datetime:
@@ -43,10 +66,11 @@ def fetch_feed(url: str) -> list[dict]:
             if not title or not link:
                 continue
 
+            resolved_url = _resolve_url(link)
             articles.append(
                 {
                     "title": title,
-                    "url": link,
+                    "url": resolved_url,
                     "source": parsed.feed.get("title", url),
                     "summary": _extract_summary(entry),
                     "published_at": _parse_published(entry),
