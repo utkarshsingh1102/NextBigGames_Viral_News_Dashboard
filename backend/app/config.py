@@ -17,17 +17,17 @@ class Settings:
     # Scheduler
     FETCH_INTERVAL_MINUTES: int = int(os.getenv("FETCH_INTERVAL_MINUTES", "10"))
 
-    # Virality threshold
-    VIRALITY_THRESHOLD: float = float(os.getenv("VIRALITY_THRESHOLD", "7.0"))
+    # Virality threshold (lowered since Reddit is removed – max score without Reddit is ~8)
+    VIRALITY_THRESHOLD: float = float(os.getenv("VIRALITY_THRESHOLD", "3.0"))
 
-    # RSS feeds
+    # RSS feeds – only trusted mobile/gaming sources
     RSS_FEEDS: list[str] = [
+        # Pocket Gamer (consumer)
+        "https://www.pocketgamer.com/feed/",
+        # Pocket Gamer Biz (industry / B2B)
         "https://www.pocketgamer.biz/rss/",
-        "https://venturebeat.com/games/feed/",
-        "https://www.gamesindustry.biz/feed",
-        "https://news.google.com/rss/search?q=hybrid+casual+games",
-        "https://news.google.com/rss/search?q=mobile+game+monetization",
-        "https://news.google.com/rss/search?q=mobile+gaming+2024",
+        # Gamigion
+        "https://www.gamigion.com/feed/",
     ]
 
     # Subreddits

@@ -1,16 +1,62 @@
 """Keyword filtering for gaming news articles."""
 
 KEYWORDS: list[str] = [
-    "hybrid casual",
+    # Core mobile / casual gaming
+    "mobile game",
     "mobile gaming",
+    "casual game",
+    "hyper casual",
+    "hypercasual",
+    "hybrid casual",
+    "mobile app",
+    # Funding & investment
+    "funding",
+    "investment",
+    "raises",
+    "raised",
+    "series a",
+    "series b",
+    "series c",
+    "seed round",
+    "venture capital",
+    "acquisition",
+    "acquired",
+    "merger",
+    "valuation",
+    # New launches & releases
+    "launch",
+    "launched",
+    "soft launch",
+    "global launch",
+    "release",
+    "released",
+    "new game",
+    "debut",
+    "early access",
+    # Trending & viral
+    "trending",
+    "viral",
+    "top charts",
+    "top grossing",
+    "chart",
+    "milestone",
+    "downloads",
+    "installs",
+    # Monetisation & growth
     "game monetization",
     "iap",
     "in-app purchase",
     "live ops",
     "liveops",
     "user acquisition",
-    "mobile game studio",
     "game economy",
+    "revenue",
+    "retention",
+    # Industry
+    "game studio",
+    "game developer",
+    "game publisher",
+    "esports",
 ]
 
 
