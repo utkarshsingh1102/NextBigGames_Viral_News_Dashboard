@@ -2,6 +2,7 @@
 
 import logging
 import logging.config
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -46,11 +47,9 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Starting up Viral Gaming News service...")
     init_db()
-    # Run one ingestion pass immediately on startup
-    try:
-        run_ingestion_job()
-    except Exception as exc:
-        logger.error("Initial ingestion failed: %s", exc, exc_info=True)
+    # Fire the first ingestion in the background so the server passes
+    # the healthcheck immediately instead of blocking for 30–60 seconds.
+    threading.Thread(target=run_ingestion_job, daemon=True).start()
     start_scheduler()
     yield
     stop_scheduler()
@@ -93,7 +92,6 @@ def health_check():
 @app.post("/api/v1/trigger", tags=["admin"], status_code=202)
 def trigger_ingestion():
     """Manually trigger an ingestion run (useful during Lovable development)."""
-    import threading
     thread = threading.Thread(target=run_ingestion_job, daemon=True)
     thread.start()
     return {"message": "Ingestion job started."}
