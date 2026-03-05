@@ -15,7 +15,7 @@ class Settings:
     )
 
     # Scheduler
-    FETCH_INTERVAL_MINUTES: int = int(os.getenv("FETCH_INTERVAL_MINUTES", "10"))
+    FETCH_INTERVAL_MINUTES: int = int(os.getenv("FETCH_INTERVAL_MINUTES", "60"))
 
     # Virality threshold (lowered since Reddit is removed – max score without Reddit is ~8)
     VIRALITY_THRESHOLD: float = float(os.getenv("VIRALITY_THRESHOLD", "3.0"))
