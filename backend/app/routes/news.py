@@ -48,9 +48,10 @@ def list_news(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     min_score: float = Query(0.0, ge=0.0, description="Minimum virality score filter"),
     tag: Optional[str] = Query(None, description="Filter by tag (e.g. Funding, Launch, Trending)"),
+    source: Optional[str] = Query(None, description="Filter by source name"),
     db: Session = Depends(get_db),
 ):
-    """Return paginated viral gaming news, newest first. Optionally filter by tag."""
+    """Return paginated viral gaming news, newest first. Optionally filter by tag or source."""
     offset = (page - 1) * page_size
     query = (
         db.query(ViralGamingNews)
@@ -59,6 +60,8 @@ def list_news(
     )
     if tag:
         query = query.filter(ViralGamingNews.tags.contains([tag]))
+    if source:
+        query = query.filter(ViralGamingNews.source.ilike(f"%{source}%"))
     total = query.count()
     items = query.offset(offset).limit(page_size).all()
     return NewsList(total=total, page=page, page_size=page_size, items=items)

@@ -86,9 +86,14 @@ def fetch_feed(url: str) -> list[dict]:
         return []
 
 
-def fetch_all_feeds() -> list[dict]:
-    """Fetch all configured RSS feeds and return merged article list."""
+def fetch_all_feeds(urls: list[str] | None = None) -> list[dict]:
+    """Fetch RSS feeds and return merged article list.
+
+    If *urls* is provided, fetch those; otherwise fall back to settings.RSS_FEEDS.
+    """
+    if urls is None:
+        urls = settings.RSS_FEEDS
     all_articles: list[dict] = []
-    for url in settings.RSS_FEEDS:
+    for url in urls:
         all_articles.extend(fetch_feed(url))
     return all_articles

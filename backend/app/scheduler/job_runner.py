@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from app.config import settings
 from app.database import SessionLocal
 from app.models.news import ViralGamingNews
+from app.models.source import RSSSource
 from app.services.rss_fetcher import fetch_all_feeds
 from app.services.keyword_filter import filter_articles
 from app.services.virality_engine import deduplicate, score_and_filter
@@ -54,8 +55,23 @@ def run_ingestion_job() -> None:
     """Full pipeline: fetch → filter → deduplicate → score → save."""
     logger.info("--- Ingestion job started ---")
 
-    # 1. Fetch from RSS feeds
-    all_articles = fetch_all_feeds()
+    # 1. Resolve active source URLs from DB
+    db = SessionLocal()
+    try:
+        active_urls = [
+            s.url for s in db.query(RSSSource).filter(RSSSource.active.is_(True)).all()
+        ]
+    finally:
+        db.close()
+
+    if not active_urls:
+        logger.info("No active RSS sources configured. Job done.")
+        return
+
+    logger.info("Fetching from %d active sources.", len(active_urls))
+
+    # 2. Fetch from RSS feeds
+    all_articles = fetch_all_feeds(active_urls)
     logger.info("RSS: %d raw articles", len(all_articles))
 
     # 2. Filter by keywords

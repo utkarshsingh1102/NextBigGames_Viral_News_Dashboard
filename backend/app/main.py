@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import init_db
 from app.routes.news import router as news_router
+from app.routes.sources import router as sources_router
 from app.scheduler.job_runner import run_ingestion_job, start_scheduler, stop_scheduler
 
 # ---------------------------------------------------------------------------
@@ -89,6 +90,7 @@ app.add_middleware(
 
 # All routes live under /api/v1 so Lovable can point to a stable base URL
 app.include_router(news_router, prefix="/api/v1")
+app.include_router(sources_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])

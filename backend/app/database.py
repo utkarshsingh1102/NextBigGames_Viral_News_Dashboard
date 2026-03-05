@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.config import settings
 
@@ -29,7 +29,34 @@ def get_db():
 
 
 def init_db():
-    """Create all tables defined in models."""
-    from app.models import news  # noqa: F401 – ensure model is registered
+    """Create all tables, run safe migrations, and seed default sources."""
+    from app.models import news  # noqa: F401
+    from app.models import source  # noqa: F401
+
     Base.metadata.create_all(bind=engine)
+
+    # Safe migration: add tags column to existing tables that predate this column
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE viral_gaming_news ADD COLUMN IF NOT EXISTS tags JSON DEFAULT '[]'"
+        ))
+        conn.commit()
+
+    # Seed default RSS sources if the table is empty
+    db = SessionLocal()
+    try:
+        from app.models.source import RSSSource
+        if db.query(RSSSource).count() == 0:
+            defaults = [
+                RSSSource(name="Pocket Gamer", url="https://www.pocketgamer.com/feed/"),
+                RSSSource(name="Pocket Gamer Biz", url="https://www.pocketgamer.biz/rss/"),
+                RSSSource(name="Gamigion", url="https://www.gamigion.com/feed/"),
+            ]
+            for s in defaults:
+                db.add(s)
+            db.commit()
+            logger.info("Seeded %d default RSS sources.", len(defaults))
+    finally:
+        db.close()
+
     logger.info("Database tables initialised.")
