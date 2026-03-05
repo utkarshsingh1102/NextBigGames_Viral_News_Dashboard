@@ -74,6 +74,14 @@ def list_tags():
     return [tag for tag, _ in TAG_RULES]
 
 
+@router.get("/sources/list", response_model=list[str])
+def list_sources(db: Session = Depends(get_db)):
+    """Return distinct source names that actually have articles stored."""
+    from sqlalchemy import distinct
+    rows = db.query(distinct(ViralGamingNews.source)).order_by(ViralGamingNews.source).all()
+    return [row[0] for row in rows]
+
+
 @router.get("/{item_id}", response_model=NewsItem)
 def get_news_item(item_id: uuid.UUID, db: Session = Depends(get_db)):
     """Return a single news article by UUID."""
