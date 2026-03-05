@@ -6,8 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system dependencies required by psycopg2-binary
+# System deps: gcc + libpq-dev needed for psycopg2-binary on slim images
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 

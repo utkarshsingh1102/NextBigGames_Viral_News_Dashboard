@@ -1,5 +1,6 @@
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
+# uvicorn==0.32.1  ← uncomment this and comment the line above if build fails on uvloop
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 feedparser==6.0.11
